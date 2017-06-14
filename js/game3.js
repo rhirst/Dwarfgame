@@ -1,3 +1,10 @@
+window.addEventListener("keydown", function(e) {
+    // space and arrow keys
+    if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+        e.preventDefault();
+    }
+}, false);
+
 var canvas;
 var Canvas_width;
 var Canvas_height;
@@ -123,8 +130,8 @@ function explosion(x, y){
 	
 	function update() {
 	//if(scroll_y > 0) scroll_y --;	
-	Makerocks();
-	Makecarts();
+	//Makerocks();
+	//Makecarts();
 	Update_points();
 	my_dwarf.update();
 	for (i = 0; i < background.length; i++){
@@ -381,7 +388,7 @@ function handleKeyDown(event) {
 		my_dwarf.limit = 8;
 		if (my_dwarf.xindex < 4 || my_dwarf.xindex > 8) my_dwarf.xindex = 4;
 		}
-	if(event.keyCode == 39 && !attack ) {
+	else if(event.keyCode == 39 && !attack ) {
 		right_key = true;
 		walking = true;
 		scroll_x = -10;
