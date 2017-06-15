@@ -1,11 +1,3 @@
-// remove page scroll on arrow key press
-window.addEventListener("keydown", function(e) {
-    // space and arrow keys
-    if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
-        e.preventDefault();
-    }
-}, false);
-
 // variables
 var canvas;
 var Canvas_width;
@@ -17,6 +9,7 @@ var center = Object();
 var ground_y = 300;
 
 var LoseCondition = false;
+var lose = new GameOver();
 
 var scroll_x = 0;
 var scroll_y = 0;
@@ -31,7 +24,8 @@ var right_key = false;
 var left_key = false;
 var up_key = false;
 var down_key = false;
-var space = false;
+var space_key = false;
+var r_key = false;
 
 var points = 0;
 var timer = 0;
@@ -43,6 +37,35 @@ var jump = false;
 
 var boom = new explosion();
 var my_dwarf = new Dwarf();
+
+
+// remove page scroll on arrow key press
+window.addEventListener("keydown", function(e) {
+    // space and arrow keys
+    if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+        e.preventDefault();
+    }
+}, false);
+
+// rotate an individual object
+function drawImageRot(img,x,y,width,height,deg){
+
+    //Convert degrees to radian 
+    var rad = deg * Math.PI / 180;
+
+    //Set the origin to the center of the image
+    context.translate(x + width / 2, y + height / 2);
+
+    //Rotate the canvas around the origin
+    context.rotate(rad);
+
+    //draw the image    
+    context.drawImage(img,width / 2 * (-1),height / 2 * (-1),width,height);
+
+    //reset the canvas  
+    context.rotate(rad * ( -1 ) );
+    context.translate((x + width / 2) * (-1), (y + height / 2) * (-1));
+}
 
 // ********************** Character Constructors ****************************
 
@@ -84,25 +107,24 @@ function explosion(x, y){
     return obj;
     };
 
-function Dwarf () {
+function GameOver () {
     var obj = {};
-    obj.w = 2000;
-    obj.h = 960;
+    obj.w = 1062;
+    obj.h = 125;
     obj.image = new Image();
-    obj.image.src = "images/dwarves.png";
+    obj.image.src = "images/game_over.png";
     obj.ticksPerFrame = 0;
     obj.xindex = 0;
-    obj.yindex = 9;
+    obj.yindex = 0;
     obj.base = 0;
-    obj.limit = 3;
-    obj.x = 180;
-    obj.y = ground_y;
+    obj.limit = 2;
+    obj.x = 177;
+    obj.y = 80;
     obj.vy = 0;
-    obj.xframes = 20;
-    obj.yframes = 12;
+    obj.xframes = 3;
+    obj.yframes = 1;
     obj.tick = 0;
-    obj.tpf = 4;
-    obj.state = 1;
+    obj.tpf = 2;
     obj.draw = function(){
         context.drawImage(  obj.image, 
                             (obj.xindex * (obj.w/obj.xframes)), 
@@ -117,12 +139,78 @@ function Dwarf () {
     
     
     obj.update = function(){
-        
+        obj.tick ++;
+        if (obj.tick > obj.tpf) {
+            obj.tick = 0;
+            obj.xindex += 1;
+        }
+        if (obj.xindex >= obj.limit){
+            obj.xindex = obj.base;
+            }
+    }
+    return obj;
+}
+
+
+function Dwarf () {
+    var obj = {};
+    obj.w = 2000;
+    obj.h = 960;
+    obj.hp = 10;
+    obj.image = new Image();
+    obj.image.src = "images/dwarves_flipped.png";
+    obj.ticksPerFrame = 0;
+    obj.xindex = 0;
+    obj.yindex = 9;
+    obj.base = 0;
+    obj.limit = 3;
+    obj.x = 180;
+    obj.y = ground_y;
+    obj.vy = 0;
+    obj.xframes = 20;
+    obj.yframes = 12;
+    obj.tick = 0;
+    obj.tpf = 4;
+    obj.state = 1;
+    obj.draw = function(){
+        if (obj.state == 3) {
+            context.globalAlpha = 0.5;
+        }
+        context.drawImage(  obj.image, 
+                            (obj.xindex * (obj.w/obj.xframes)), 
+                            (obj.yindex * (obj.h/obj.yframes)), 
+                            (obj.w/obj.xframes), 
+                            (obj.h/obj.yframes),
+                            obj.x, 
+                            obj.y, 
+                            (obj.w/obj.xframes), 
+                            (obj.h/obj.yframes));
+        context.globalAlpha = 1;
+    }
+    
+    
+    obj.update = function(){
         obj.y -= obj.vy;
         obj.vy += grav;
         obj.bounds();
         obj.tick ++;
-        if (attack){
+        if (obj.tick > obj.tpf) {
+            obj.tick = 0;
+            obj.xindex += 1;
+        }
+        if (obj.hp <= 0) {
+            obj.state = 5;
+            obj.base = 14;
+            obj.limit = 15;
+            LoseCondition = true;
+            if (obj.xindex >= 15){
+                obj.base = 15;
+            } 
+        }
+        if (obj.xindex >= obj.limit){
+            obj.xindex = obj.base;
+            }
+        /*if (attack){
             if (obj.xindex >= 14){
                 attack = false;
                 obj.xindex = 0;
@@ -131,13 +219,8 @@ function Dwarf () {
                 obj.xindex = 8;
                 }
             }
-        if (obj.tick > obj.tpf) {
-            obj.tick = 0;
-            obj.xindex += 1;
-        }
-        if (obj.xindex >= obj.limit){
-            obj.xindex = obj.base;
-            }
+        */
+
     }
     obj.bounds = function(){
         
@@ -153,39 +236,62 @@ function Dwarf () {
     function Rock (xcord) {
         var obj = {};
         obj.image = new Image();
-        obj.image.src = "images/rock.png";
+        obj.image.src = "images/boulder.png";
         obj.x = xcord;
         obj.y = 0;
         obj.w = 50;
         obj.h = 50;
         obj.hp = 10;
         obj.vy = 10;
+        obj.vx = 0;
+        obj.rot =  0;
+        obj.grounded = false;
         obj.draw = function () {
-            context.drawImage(obj.image, obj.x, obj.y, obj.w, obj.h);
+            if(obj.rot == 0) {
+                context.drawImage(obj.image, obj.x, obj.y, obj.w, obj.h);
             }
+            else {
+                drawImageRot(obj.image, obj.x, obj.y, obj.w, obj.h, obj.rot);
+            }
+        }
         obj.update = function () {
+            obj.bounds();
             obj.x += scroll_x;
             obj.y += obj.vy;
-            obj.bounds();
-            if (my_dwarf.xindex >12){
-                //console.log(my_dwarf.state);
-                if (my_dwarf.state == 0){
-                    if (obj.x > (my_dwarf.x+80) && obj.x < (my_dwarf.x +140) && obj.y >= my_dwarf.y && obj.y < (my_dwarf.y+100)){
-                        console.log("hit");
+            if (obj.grounded) {
+                obj.x += obj.vx;
+                obj.rot -= 5;
+            }
+
+            if (true){
+                if (false){
+                    if (obj.x > (my_dwarf.x+80) && obj.x < (my_dwarf.x + 140) && obj.y >= my_dwarf.y + 10 && obj.y < (my_dwarf.y+80)){
                         obj.hp -= 10;
+
                         }
                 }
                 else{
-                    if (obj.x < (my_dwarf.x+20) && obj.x > (my_dwarf.x - 40)){
-                        console.log("hitb");
+                    if (obj.x < (my_dwarf.x+60) && obj.x > (my_dwarf.x - 0) && obj.y >= my_dwarf.y + 10 && obj.y < (my_dwarf.y+80)){
                         obj.hp -= 10;
+                        my_dwarf.hp -= 10;
+                        if (my_dwarf.hp > 0) {
+                            my_dwarf.state = 3;
+                        }
+                        else if (my_dwarf.state < 5) {
+                            my_dwarf.xindex = 14;
+                            my_dwarf.state = 5
+                            my_dwarf.tpf = 30;
+                            my_dwarf.image.src = "images/dwarves_flipped.png";
                         }
                     }
+                }
             }
-            }
+        }
         obj.bounds = function () {
-            if (obj.y >= 460+obj.h){
+            if (obj.y >= ground_y+25){
                 obj.vy = 0;
+                obj.vx = -5;
+                obj.grounded = true;
                 }
             }
         return obj;
@@ -217,13 +323,6 @@ function Minecart(){
 // ***************** Canvas Functions *********************************
 
     function draw() {
-    if(LoseCondition){
-        var lose = {};
-        lose.image = new Image();
-        lose.image.src = "images/GameOver.png";
-        context.drawImage(lose.image, 0, 0);
-        }
-    else{
         // Clear the screen.
         clearCanvas();
         for (i = 0; i < background.length; i++){
@@ -244,6 +343,8 @@ function Minecart(){
         // Draw my player
         context.fillstyle = "#ffffff";
         my_dwarf.draw();
+        if (LoseCondition) {
+            lose.draw();
         }
     }
     
@@ -261,81 +362,91 @@ function Minecart(){
     
     function update() {
     //if(scroll_y > 0) scroll_y --; 
-    //Makerocks();
+    Makerocks();
     //Makecarts();
-    //Update_points();
+    Update_points(points);
 
     // Update Game Controls
     scroll_x = 0;
     walking = false;
-    if (left_key && !right_key){
-        walking = true;
-        scroll_x += 10;
-        my_dwarf.image.src = "images/dwarves.png";
-        if (attack) {
-            my_dwarf.base = 8;
-            my_dwarf.limit = 14;
-            if (my_dwarf.xindex == 13) {
-                attack = false;
-                my_dwarf.base = 4;
-                my_dwarf.limit = 10;
-                my_dwarf.xindex = 4;
-            }
+    if (my_dwarf.state < 5) {
+        if (up_key) {
+            jump = true;
         }
-        else {
-            my_dwarf.state = 0;
-            my_dwarf.base = 4;
-            my_dwarf.limit = 10;
-            if (my_dwarf.xindex < 4 || my_dwarf.xindex > 10) my_dwarf.xindex = 4;
-        }
-    }
-    else if (right_key && !left_key){
-        walking = true;
-        scroll_x += -10;
-        my_dwarf.image.src = "images/dwarves_flipped.png";
-        if (attack) {
-            my_dwarf.base = 8;
-            my_dwarf.limit = 14;
-            if (my_dwarf.xindex == 13) {
-                attack = false;
-                my_dwarf.base = 4;
-                my_dwarf.limit = 10;
-                my_dwarf.xindex = 4;
-            }
-        }
-        else {
-            my_dwarf.state = 0;
-            my_dwarf.base = 4;
-            my_dwarf.limit = 10;
-            if (my_dwarf.xindex < 4 || my_dwarf.xindex > 10) my_dwarf.xindex = 4;
-        }
-    } 
-    else {
-        my_dwarf.base = 0;
-        my_dwarf.limit = 3;
-    }
 
-    if (attack) {
-        my_dwarf.base = 8;
-        my_dwarf.limit = 14;
-        if (my_dwarf.xindex == 13) {
-            attack = false;
+        if (space_key) {
+            attack = true;
+        }
+        if (left_key && !right_key){
+            walking = true;
+            scroll_x += 10;
+            my_dwarf.image.src = "images/dwarves.png";
+            if (attack) {
+                my_dwarf.base = 8;
+                my_dwarf.limit = 14;
+                if (my_dwarf.xindex == 13) {
+                    attack = false;
+                    my_dwarf.base = 4;
+                    my_dwarf.limit = 10;
+                    my_dwarf.xindex = 4;
+                }
+            }
+            else {
+                my_dwarf.state = 0;
+                my_dwarf.base = 4;
+                my_dwarf.limit = 10;
+                if (my_dwarf.xindex < 4 || my_dwarf.xindex > 10) my_dwarf.xindex = 4;
+            }
+        }
+        else if (right_key && !left_key){
+            walking = true;
+            scroll_x += -10;
+            my_dwarf.image.src = "images/dwarves_flipped.png";
+            if (attack) {
+                my_dwarf.base = 8;
+                my_dwarf.limit = 14;
+                if (my_dwarf.xindex == 13) {
+                    attack = false;
+                    my_dwarf.base = 4;
+                    my_dwarf.limit = 10;
+                    my_dwarf.xindex = 4;
+                }
+            }
+            else {
+                my_dwarf.state = 0;
+                my_dwarf.base = 4;
+                my_dwarf.limit = 10;
+                if (my_dwarf.xindex < 4 || my_dwarf.xindex > 10) my_dwarf.xindex = 4;
+            }
+        } 
+        else {
             my_dwarf.base = 0;
             my_dwarf.limit = 3;
-            my_dwarf.xindex = 0;
+        }
+
+        if (attack) {
+            my_dwarf.base = 8;
+            my_dwarf.limit = 14;
+            if (my_dwarf.xindex == 13) {
+                attack = false;
+                my_dwarf.base = 0;
+                my_dwarf.limit = 3;
+                my_dwarf.xindex = 0;
+            }
+        }
+        if (scroll_x < 0) {
+            points += 1;
+        }
+
+        if (jump && my_dwarf.vy == 0 && my_dwarf.y == ground_y) {
+            my_dwarf.vy += 15;
+        }
+        // Update Background
+        for (i = 0; i < background.length; i++){
+        background[i].update();
         }
     }
 
-    if (jump && my_dwarf.vy == 0 && my_dwarf.y == ground_y) {
-        my_dwarf.vy += 15;
-    }
-    // Update Player
-    my_dwarf.update();
-
-    // Update Background
-    for (i = 0; i < background.length; i++){
-    background[i].update();
-    }
     // Update explosions
     for (i = 0; i < explosion_array.length; i++){
         explosion_array[i].update();
@@ -347,7 +458,7 @@ function Minecart(){
     for (i = 0; i < rock_array.length; i++){
         rock_array[i].update();
         if ((rock_array[i].x > (my_dwarf.x+30))&& (rock_array[i].x < (my_dwarf.x+70)) && ((rock_array[i].y-rock_array[i].h) >= my_dwarf.y)&&(rock_array[i].y < (my_dwarf.y+80))){
-            scroll_x = 0;
+            //scroll_x = 0;
             
             }
         if (rock_array[i].hp <= 0){
@@ -359,18 +470,29 @@ function Minecart(){
             points += 10;
         }
     }
+
+    // Update Player
+    my_dwarf.update();
+    lose.update();
+
     // Update carts
     for (i = 0; i < cart_array.length; i++){
         cart_array[i].update();
         
         if ((cart_array[i].x+100 > (my_dwarf.x+30))&& ((cart_array[i].x) < (my_dwarf.x+70)) && ((cart_array[i].y) >= my_dwarf.y)&&(cart_array[i].y < (my_dwarf.y+80))){
             LoseCondition = true;
-            console.log("lose");
             }
         if (cart_array[i].x < -100){
             cart_array.splice(i,1);
             }
     }
+    if (r_key) {
+        my_dwarf = new Dwarf();
+        rock_array = [];
+        points = 0;
+        LoseCondition = false;
+    }
+
     timer ++;
     
     }
@@ -407,7 +529,6 @@ function Minecart(){
 //******************* Key Events ***************************
 
     function handleKeyDown(event) {
-        scroll_x= 0;
         if(event.keyCode == 37 && !attack ) {
             left_key = true;
             }
@@ -416,12 +537,16 @@ function Minecart(){
             }
         if(event.keyCode == 38 && !jump) {
             //up_key
-            jump = true;
+            up_key = true;
             }
         else if (event.keyCode == 40) down_key = true;
         
         if(event.keyCode == 32 && !attack) {
-            attack = true;
+            space_key = true;
+        }
+
+        if(event.keyCode == 82) {
+            r_key = true;
         }
     }
 
@@ -434,7 +559,7 @@ function Minecart(){
             }
         if(event.keyCode == 38) {
             //up_key
-            jump = false;
+            up_key = false;
             //scroll_y += 10;
             }
         else if (event.keyCode == 40) down_key = false;
@@ -443,9 +568,13 @@ function Minecart(){
             //my_dwarf.xindex = 0;
             //my_dwarf.base = 0;
             //my_dwarf.limit = 3;
+            space_key = false;
             
         }
+        if(event.keyCode == 82) {
+            r_key = false;
         }
+    }
 
 
     function Background (x, y) {
@@ -471,6 +600,7 @@ function Minecart(){
             obj.x += obj.x_scroll;
             obj.y += obj.y_scroll;
             obj.bounds();
+
             }
         obj.bounds = function() {
             if (obj.x <= -960){
